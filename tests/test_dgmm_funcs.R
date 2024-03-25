@@ -6,60 +6,53 @@ source("C:/Users/ADostovalova/Desktop/work/deepgmm/tests/dgmm_funcs.R")
 args = commandArgs(trailingOnly=TRUE)
 file<-"hhh"
 if (length(args)>0){ file<-args[1]
-}else{file<- "C:/Users/ADostovalova/Desktop/work/deepgmm/my_data_smiley.csv"}
+}else{file<- "C:\\Users\\ADostovalova\\PycharmProjects\\test2\\train_data.csv"}
 
-s10 = T4cluster::genSMILEY(200, sd=0.35)
-write.csv2(s10$data, file)
+print(file)
 data3 <-  read.csv2(file)
+print(data3)
 res<-first_stats(data3,1)
 print("result")
 print(res)
 
-data3 <-  read.csv2(args[1])
-#s25 = genSMILEY(200, sd=0.25)
-#s50 = genSMILEY(200, sd=0.5)
-
-z <-rep(1.3,100)
-w <-rep(1.3,100)
-#cat(data3[400])
-#cat(data3)
-
-## Visualize
-
-y2 <- mtcars
-#cat(s10$data)
 layers <- 2
-k <- c(4,2)
-r <-c(2,1)
+k <- c(5,4)
+r <-c(3,2)
 it <- 1450
 eps <- 0.001
 seed <- 1
 init <- "random"
-cat(length(k))
-#print(y)
 set.seed(seed)
 
-#3d for sata or more
-arr <- cbind(data3, c(z,w))
-arr1 <- cbind(s10$data, c(z,w))
 
-#print(arr)
-#print(arr1)
-#arr<- slice(arr, 1:3)
-arr<-matrix(as.numeric(unlist(arr)), ncol=length(arr))#, byrow=TRUE)
-#arr<-as.numeric(unlist(arr))
-#getAnywhere(deepgmm)
-model <- deepgmm::deepgmm(y = arr[1:200,2:4], layers = layers, k = k, r = r,
-                          it = it, eps = eps, init = init,  scale = FALSE)
+arr<-matrix(as.numeric(unlist(data3)), ncol=length(data3))#, byrow=TRUE)
 
+#model <- deepgmm::deepgmm(y = arr, layers = layers, k = k, r = r,
+                       #   it = it, eps = eps, init = init,  scale = FALSE)
 
-#cat(model$s)
-#write.table(model$s, file = "C:/Users/ADostovalova/Desktop/work/deepgmmmy_data.txt", sep = ";")
+res<-dgmm_grid_search(arr, 4)
+bics<-c(as.numeric(res$bic[1]),as.numeric(res$bic[3]), as.numeric(res$bic[5]))
+
+layers<-which(bics %in% min(unlist(bics)))#as.integer(which.min(unlist(bics)))
+print(res$bic[2*layers])
+params<-sapply(strsplit((res$bic[2*layers]), split=", "), function(x) (as.numeric(x))) 
+print(params)
+if (layers == 1)
+{ 
+k <- c(params[2])
+r <-c(params[1])
+}
+if (layers==2)
+{ 
+k <- c(params[3],params[4])
+r <-c(params[1], params[2])
+}
+if (layers==3)
+{ k <- c(params[4],params[5], params[6])
+r <-c(params[1], params[2],params[3])
+}
+print(k)
+print(r)
+model <- deepgmm::deepgmm(y = arr, layers = layers, k = k, r = r,seed=1)
+                          #   it = it, eps = eps, init = init,  scale = FALSE)
 write.csv2(model$s, "C:/Users/ADostovalova/Desktop/work/deepgmm/my_data.csv")
-#write.table(model$s, file = "my_data.txt", sep = ";")
-
-
-opar <- par(no.readonly=TRUE)
-par(mfrow=c(1,3), pty="s")
-plot(arr[1:200,2:3], col=s10$label, pch=19, main="sd=0.10")
-plot(arr[1:200,2:3], col=model$s, pch=19, main="sd=0.25 dgmm")
